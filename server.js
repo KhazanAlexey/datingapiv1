@@ -21,7 +21,7 @@ app.get('/photos/:gender/:photoNumber', (req, res, next) => {
         }
     });
 });
-const photoDatafilePath = 'aa.json';
+const photoDatafilePath = 'photosData.json';
 // Middleware to parse JSON bodies
 app.get('/photos', async (req, res) => {
     try {
