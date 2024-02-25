@@ -29,7 +29,6 @@ app.get('/photos', async (req, res) => {
         const genders = await fs.readdir(photoDirectory);
         const photoDatafile = await fs.readFile(photoDatafilePath, 'utf-8');
         const photoDatafileData = JSON.parse(photoDatafile);
-        console.log(photoDatafileData);
         const photoInfo = photoDatafileData;
 
         for (const gender of genders) {
@@ -37,6 +36,7 @@ app.get('/photos', async (req, res) => {
             const photos = await fs.readdir(genderPath);
             photoInfo[gender] = photos;
         }
+
         res.json(photoInfo);
     } catch (err) {
         console.error('Error retrieving photo information:', err);
