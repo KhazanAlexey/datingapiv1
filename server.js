@@ -10,11 +10,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
 
 // Route to serve photos by gender and number
-app.get('/photos/:gender/:photoNumber', (req, res, next) => {
+app.get('/photos/:gender/:photoName', (req, res, next) => {
     const gender = req.params.gender;
     const photoName = req.params.photoName;
     const photoPath = path.join(__dirname, 'public', 'photos', gender, photoName);
-
     res.sendFile(photoPath, (err) => {
         if (err) {
             next(err); // Pass error to the error handling middleware
