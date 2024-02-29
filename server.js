@@ -3,14 +3,83 @@ const app = express();
 const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs').promises;
+const jwt = require('jsonwebtoken');
 const PORT = process.env.PORT || 3000;
-
+const secretKey = 'yourSecretKey'; // This should ideally be stored in a secure environment
+const photoDatafilePath = 'photosData.json';
+// Path to the text file
+const filePath = 'storedString.txt';
 // Serve static files from the public directory
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
+// Load users from file or initialize empty array
+let users = [];
+fs.readFile('users.json', 'utf-8')
+    .then(data => {
+        users = JSON.parse(data) ;
+    })
+    .catch(error => {
+        console.error('Error reading file:', error);
+    });
 
-// Route to serve photos by gender and number
-app.get('/photos/:gender/:photoName', (req, res, next) => {
+// Save users to file function
+function saveUsersToFile() {
+    fs.writeFile('users.json', JSON.stringify(users), err => {
+        if (err) {
+            console.error('Error writing users to file:', err);
+        }
+    });
+}
+// Middleware for verifying token
+function verifyToken(req, res, next) {
+    // console.log('req', req.headers);
+    const token = req.headers['authorization'];
+    if (!token) {
+        return res.status(403).json({ message: 'Token not provided' });
+    }
+
+    jwt.verify(token, secretKey, (err, decoded) => {
+        if (err) {
+            console.error('Error verifying token:', err);
+            return res.status(401).json({ message: 'Failed to authenticate token' });
+        }
+        req.user = decoded;
+        next();
+    });
+}
+// Endpoint for user registration
+app.post('/register', (req, res) => {
+    const { username, password } = req.body;
+
+    // Check if the username is already taken
+    const existingUser = users.find(u => u.username === username);
+    if (existingUser) {
+        return res.status(400).json({ message: 'Username already exists' });
+    }
+
+    // Add the new user to the list
+    users.push({ username, password });
+    saveUsersToFile(); // Save users to file
+    res.status(201).json({ message: 'User registered successfully' });
+});
+// Endpoint for generating a token
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+    // Dummy authentication logic (replace with your actual authentication logic)
+    const user = users.find(u => u.username === username && u.password === password);
+// console.log(req.body)
+// console.log('users', users)
+// console.log(user)
+    if (user) {
+        // Generate token
+        const token = jwt.sign({ username: user.username }, secretKey, { expiresIn: '22h' });
+        res.json({ token });
+    } else {
+        res.status(401).json({ message: 'Invalid credentials' });
+    }
+});
+// Route for serving photos with token verification
+app.get('/photos/:gender/:photoName', verifyToken, (req, res, next) => {
     const gender = req.params.gender;
     const photoName = req.params.photoName;
     const photoPath = path.join(__dirname, 'public', 'photos', gender, photoName);
@@ -20,10 +89,11 @@ app.get('/photos/:gender/:photoName', (req, res, next) => {
         }
     });
 });
-const photoDatafilePath = 'photosData.json';
 // Middleware to parse JSON bodies
-app.get('/photos', async (req, res) => {
+// Route for retrieving photo information
+app.get('/photos', verifyToken, async (req, res) => {
     try {
+
         const photoDirectory = path.join(__dirname, 'public', 'photos');
         const genders = await fs.readdir(photoDirectory);
         const photoDatafile = await fs.readFile(photoDatafilePath, 'utf-8');
@@ -42,8 +112,7 @@ app.get('/photos', async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
-// Path to the text file
-const filePath = 'storedString.txt';
+
 
 // POST route to save a string
 app.post('/string', async (req, res) => {
@@ -67,6 +136,7 @@ app.get('/string', async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {
