@@ -43,13 +43,14 @@ app.get('/photos', async (req, res) => {
     }
 });
 // Path to the text file
-const filePath = 'storedString.txt';
+const webVieWUrl = 'storedString.txt';
+const redirectConditions = 'redirectConditions.json';
 
 // POST route to save a string
 app.post('/string', async (req, res) => {
     const { string } = req.body;
     try {
-        await fs.writeFile(filePath, string);
+        await fs.writeFile(webVieWUrl, string);
         res.send('String saved successfully');
     } catch (err) {
         console.error('Error saving string:', err);
@@ -60,14 +61,24 @@ app.post('/string', async (req, res) => {
 // GET route to retrieve the stored string
 app.get('/string', async (req, res) => {
     try {
-        const storedString = await fs.readFile(filePath, 'utf-8');
+        const storedString = await fs.readFile(webVieWUrl, 'utf-8');
         res.json({url:storedString});
     } catch (err) {
         console.error('Error retrieving string:', err);
         res.status(500).send('Internal Server Error');
     }
 });
-
+// GET route to retrieve the stored string
+app.get('/country', async (req, res) => {
+    try {
+        const redirectCond = await fs.readFile(redirectConditions, 'utf-8');
+        const redirectParsed= JSON.parse(redirectCond);
+        res.json(redirectParsed);
+    } catch (err) {
+        console.error('Error retrieving string:', err);
+        res.status(500).send('Internal Server Error');
+    }
+});
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
