@@ -107,8 +107,6 @@ Promise.all([
     fs.readFile('server.cert')
 ])
     .then(([key, cert]) => {
-        console.log(key)
-        console.log(cert)
         options = {
             key: key,
             cert: cert
