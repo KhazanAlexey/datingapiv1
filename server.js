@@ -4,12 +4,25 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs').promises;
 const PORT = process.env.PORT || 3000;
+const https = require('https');
+// const morgan = require("morgan");
 
+// Middleware
+// app.use(morgan("dev"));///////////////
 // Serve static files from the public directory
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
 
 // Route to serve photos by gender and number
+app.use((req, res, next) => {
+    if (req.secure) {
+        next();
+    } else {
+        res.redirect('https://' + req.headers.host + req.url);
+    }
+});
+
 app.get('/photos/:gender/:photoName', (req, res, next) => {
     const gender = req.params.gender;
     const photoName = req.params.photoName;
@@ -85,7 +98,31 @@ app.use((err, req, res, next) => {
     res.status(500).send('Internal Server Error');
 });
 
-// Start the server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+// HTTPS options
+let options = {};
+
+// Read SSL certificate and key files asynchronously
+Promise.all([
+    fs.readFile('server.key'),
+    fs.readFile('server.cert')
+])
+    .then(([key, cert]) => {
+        console.log(key)
+        console.log(cert)
+        options = {
+            key: key,
+            cert: cert
+        };
+
+        // Create HTTPS server
+        const server = https.createServer(options, app);
+
+        // Start the server
+        server.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+        });
+    })
+    .catch(error => {
+        console.error('Error reading SSL certificate or key file:', error);
+        process.exit(1); // Terminate the process
+    });
