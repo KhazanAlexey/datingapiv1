@@ -55,6 +55,42 @@ app.get('/photos', async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
+// Serve JSON file with Access-Control-Allow-Origin header
+app.get('/locales/:lng', async (req, res, next) => {
+    const lng = req.params.lng;
+    const filePath = path.join(__dirname, 'locales', lng, 'common.json');
+    try {
+        const data = await fs.readFile(filePath, 'utf8');
+        res.header('Access-Control-Allow-Origin', '*');
+        res.json(JSON.parse(data));
+    } catch (err) {
+        next(err); // Pass error to the error handling middleware
+    }
+});
+// Update key-value pair in JSON file with PUT request
+app.put('/locales/:lng', async (req, res, next) => {
+    const lng = req.params.lng;
+    const filePath = path.join(__dirname, 'locales', lng, 'common.json');
+    try {
+        // Read the existing JSON data
+        let jsonData = await fs.readFile(filePath, 'utf8');
+        jsonData = JSON.parse(jsonData);
+
+        // Update the value for the specified key
+        const { key, value } = req.body;
+        jsonData[key] = value;
+
+        // Write the updated JSON data back to the file
+        await fs.writeFile(filePath, JSON.stringify(jsonData, null, 2));
+
+        // Set Access-Control-Allow-Origin header
+        res.header('Access-Control-Allow-Origin', '*');
+
+        res.status(200).send('Key-Value pair updated successfully');
+    } catch (err) {
+        next(err); // Pass error to the error handling middleware
+    }
+});
 // Path to the text file
 const webVieWUrl = 'storedString.txt';
 const redirectConditions = 'redirectConditions.json';
