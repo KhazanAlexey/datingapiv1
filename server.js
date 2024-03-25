@@ -67,6 +67,17 @@ app.get('/locales/:lng', async (req, res, next) => {
         next(err); // Pass error to the error handling middleware
     }
 });
+app.get('/locales', async (req, res, next) => {
+    const lng = req.params.lng;
+    const filePath = path.join(__dirname, 'locales', 'all', 'all.json');
+    try {
+        const data = await fs.readFile(filePath, 'utf8');
+        res.header('Access-Control-Allow-Origin', '*');
+        res.json(JSON.parse(data));
+    } catch (err) {
+        next(err); // Pass error to the error handling middleware
+    }
+});
 // Update key-value pair in JSON file with PUT request
 app.put('/locales/:lng', async (req, res, next) => {
     const lng = req.params.lng;
